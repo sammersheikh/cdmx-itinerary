@@ -13,6 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     :root {
       --cream: #f4efe4;
@@ -73,7 +74,7 @@
       position: fixed; left: 12px; right: 12px; bottom: 14px; z-index: 15;
       background: rgba(255,250,242,0.92); backdrop-filter: blur(16px);
       border-radius: 22px; box-shadow: var(--shadow);
-      display: grid; grid-template-columns: repeat(5, 1fr);
+      display: grid; grid-template-columns: repeat(6, 1fr);
       padding: 6px;
     }
     .dock button {
@@ -93,6 +94,14 @@
     .err { color: #9b2c2c; font-size: 14px; min-height: 1.2em; margin-top: 10px; }
     body.locked main, body.locked .dock { visibility: hidden; }
     .hidden { display: none !important; }
+    #map { height: 42vh; min-height: 240px; border-radius: 18px; overflow: hidden; background: #e8efe9; }
+    .area { display: flex; align-items: flex-start; gap: 12px; width: 100%; text-align: left; border: 0; background: transparent; padding: 12px 0; border-top: 1px solid var(--line); font: inherit; color: inherit; cursor: pointer; }
+    .area:first-of-type { border-top: 0; }
+    .area.on { background: var(--cream); margin: 0 -12px; padding: 12px; border-radius: 16px; border-top-color: transparent; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 5px; flex: 0 0 12px; }
+    .area-places { display: none; padding: 0 0 8px 24px; }
+    .area-places.on { display: block; }
+    .leaflet-popup-content { font-family: "Source Sans 3", sans-serif; margin: 10px 12px; }
   </style>
 </head>
 <body class="locked">
@@ -153,6 +162,20 @@
         <h2>The spine</h2>
         <div class="people" id="day-filters"></div>
         <div id="days"></div>
+      </section>
+    </div>
+
+    <div id="panel-map" class="panel">
+      <section class="card">
+        <p class="kicker">Near you</p>
+        <h2>Areas</h2>
+        <p class="meta" id="map-origin">Distance from the house until GPS is on.</p>
+        <div class="people" id="map-chips"></div>
+        <div id="map"></div>
+      </section>
+      <section class="card">
+        <p class="kicker">Closest first</p>
+        <div id="areas"></div>
       </section>
     </div>
 
@@ -220,12 +243,14 @@
 
   <nav class="dock">
     <button type="button" data-tab="plan" class="on">Plan</button>
+    <button type="button" data-tab="map">Map</button>
     <button type="button" data-tab="places">Places</button>
     <button type="button" data-tab="money">Money</button>
     <button type="button" data-tab="pack">Pack</button>
     <button type="button" data-tab="sos">SOS</button>
   </nav>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     var PLACES = [
       {cat:"Stay", name:"Family house", addr:"Flor Silvestre 13, San Pedro Mártir, 14650 Tlalpan, CDMX", lat:19.26237, lng:-99.17502, note:"Sitio taxi from MEX Wed · 60–90 min rush"},
@@ -244,6 +269,30 @@
       {cat:"Cafes", name:"Drippin", addr:"Tlacoquemécatl 217, Col. Del Valle Centro, CDMX", lat:19.37735, lng:-99.16809, note:"Del Valle"},
       {cat:"Cafes", name:"Tostador 1", addr:"Londres 31, Juárez, 06600 CDMX", lat:19.42793, lng:-99.15916, note:"Across from El Minutito"}
     ];
+    var HOUSE = { lat: 19.26237, lng: -99.17502 };
+    var AREAS = [
+      { id: "tlalpan", name: "Tlalpan", color: "#1f6b4a", lat: 19.252, lng: -99.174, day: "20" },
+      { id: "sanangel", name: "San Ángel", color: "#b45309", lat: 19.342, lng: -99.200, day: "22" },
+      { id: "roma", name: "Roma / Juárez", color: "#7c3aed", lat: 19.423, lng: -99.158, day: null },
+      { id: "centro", name: "Centro", color: "#be123c", lat: 19.428, lng: -99.151, day: "21" },
+      { id: "delvalle", name: "Del Valle", color: "#0369a1", lat: 19.377, lng: -99.168, day: null },
+      { id: "mex", name: "MEX airport", color: "#475569", lat: 19.434, lng: -99.073, day: "23" }
+    ];
+    var AREA_BY_NAME = {
+      "Family house": "tlalpan",
+      "Rancho San Jorge": "tlalpan",
+      "San Ángel Inn": "sanangel",
+      "Tetetlán": "sanangel",
+      "Casa Pedregal (Barragán)": "sanangel",
+      "El Minutito": "roma",
+      "Furniture Music": "roma",
+      "Café Tormenta": "roma",
+      "Tostador 1": "roma",
+      "Arena México": "centro",
+      "Mercado de Artesanías La Ciudadela": "centro",
+      "Drippin": "delvalle",
+      "MEX airport": "mex"
+    };
     var CATS = ["Stay","Transport","Dining","Show","Shopping","Cafes","Culture"];
     var DAYS = [
       {id:"19", label:"Wed 19", body:"<div class='what'>Arrive light</div><div class='meta'>Leave Tracy 6:30a · SFO 9:20a · UA 1271 10:50a · land 4:15p. Sitio taxi to the house. Eat there. Sleep. 2,300 m.</div>"},
@@ -290,6 +339,160 @@
       ["Hablo poco español.", "I speak little Spanish."]
     ];
 
+    function haversine(a, b, c, d) {
+      var R = 6371, toRad = Math.PI / 180;
+      var dLat = (c - a) * toRad, dLng = (d - b) * toRad;
+      var s = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(a * toRad) * Math.cos(c * toRad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      return 2 * R * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+    }
+    function inCdmx(p) {
+      return p.lat != null && p.lat > 19.1 && p.lat < 19.6 && p.lng > -99.35 && p.lng < -98.9;
+    }
+    function areaOf(p) {
+      if (p.area) return p.area;
+      if (AREA_BY_NAME[p.name]) return AREA_BY_NAME[p.name];
+      if (!inCdmx(p)) return null;
+      var best = null, bestD = 1e9;
+      AREAS.forEach(function (a) {
+        var d = haversine(p.lat, p.lng, a.lat, a.lng);
+        if (d < bestD) { bestD = d; best = a.id; }
+      });
+      return bestD < 8 ? best : null;
+    }
+    function todayAreaId() {
+      var day = new Intl.DateTimeFormat("en-US", { timeZone: "America/Mexico_City", day: "2-digit" }).format(new Date());
+      var hit = AREAS.filter(function (a) { return a.day === day; })[0];
+      return hit ? hit.id : null;
+    }
+    function fmtKm(km) {
+      if (km == null || isNaN(km)) return "";
+      return km < 1 ? Math.round(km * 1000) + " m" : km.toFixed(1) + " km";
+    }
+
+    var mapObj = null, mapMarkers = [], hereMarker = null, here = { lat: HOUSE.lat, lng: HOUSE.lng, gps: false };
+    var selectedArea = null, onlyToday = false;
+
+    function ensureMap() {
+      if (mapObj || typeof L === "undefined") return;
+      mapObj = L.map("map", { zoomControl: false, attributionControl: false }).setView([19.36, -99.16], 11);
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", { maxZoom: 19 }).addTo(mapObj);
+      L.control.zoom({ position: "topright" }).addTo(mapObj);
+      setTimeout(function () { mapObj.invalidateSize(); }, 80);
+    }
+    function pinIcon(color) {
+      return L.divIcon({
+        className: "",
+        html: '<div style="width:14px;height:14px;border-radius:50%;background:' + color + ';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)"></div>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+      });
+    }
+    function drawMap() {
+      if (!mapObj) return;
+      mapMarkers.forEach(function (m) { mapObj.removeLayer(m); });
+      mapMarkers = [];
+      if (hereMarker) { mapObj.removeLayer(hereMarker); hereMarker = null; }
+      hereMarker = L.circleMarker([here.lat, here.lng], {
+        radius: 7, color: "#1f6b4a", weight: 2, fillColor: "#fff", fillOpacity: 1
+      }).addTo(mapObj).bindPopup(here.gps ? "You" : "House");
+      var bounds = [[here.lat, here.lng]];
+      PLACES.forEach(function (p) {
+        var aid = areaOf(p);
+        if (!aid || !inCdmx(p)) return;
+        if (selectedArea && aid !== selectedArea) return;
+        if (onlyToday && aid !== todayAreaId()) return;
+        var area = AREAS.filter(function (a) { return a.id === aid; })[0];
+        var m = L.marker([p.lat, p.lng], { icon: pinIcon(area.color) })
+          .addTo(mapObj)
+          .bindPopup("<b>" + p.name + "</b><br>" + (p.note || p.addr));
+        mapMarkers.push(m);
+        bounds.push([p.lat, p.lng]);
+      });
+      if (bounds.length > 1) mapObj.fitBounds(bounds, { padding: [28, 28], maxZoom: 14 });
+    }
+    function renderAreas() {
+      var root = document.getElementById("areas");
+      root.innerHTML = "";
+      var groups = AREAS.map(function (a) {
+        var places = PLACES.filter(function (p) { return areaOf(p) === a.id && inCdmx(p); });
+        var km = haversine(here.lat, here.lng, a.lat, a.lng);
+        return { a: a, places: places, km: km };
+      }).filter(function (g) { return g.places.length; });
+      if (onlyToday) {
+        var tid = todayAreaId();
+        groups = groups.filter(function (g) { return g.a.id === tid; });
+      }
+      groups.sort(function (x, y) { return x.km - y.km; });
+      groups.forEach(function (g) {
+        var wrap = document.createElement("div");
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "area" + (selectedArea === g.a.id ? " on" : "");
+        btn.innerHTML = '<span class="dot"></span><span><div class="what"></div><div class="meta"></div></span>';
+        btn.querySelector(".dot").style.background = g.a.color;
+        btn.querySelector(".what").textContent = g.a.name;
+        btn.querySelector(".meta").textContent = fmtKm(g.km) + " · " + g.places.length + (g.places.length === 1 ? " place" : " places");
+        var list = document.createElement("div");
+        list.className = "area-places" + (selectedArea === g.a.id ? " on" : "");
+        g.places.forEach(function (p) {
+          var d = document.createElement("div");
+          d.className = "place";
+          d.innerHTML = '<div class="what"></div><div class="meta"></div><div class="acts"></div>';
+          d.querySelector(".what").textContent = p.name;
+          d.querySelector(".meta").textContent = p.note || p.addr;
+          var acts = d.querySelector(".acts");
+          acts.setAttribute("data-addr", p.addr);
+          if (p.lat != null) { acts.setAttribute("data-lat", p.lat); acts.setAttribute("data-lng", p.lng); }
+          fillActs(acts);
+          list.appendChild(d);
+        });
+        btn.onclick = function () {
+          selectedArea = selectedArea === g.a.id ? null : g.a.id;
+          renderAreas();
+          drawMap();
+          if (selectedArea && mapObj) mapObj.setView([g.a.lat, g.a.lng], 13);
+        };
+        wrap.appendChild(btn);
+        wrap.appendChild(list);
+        root.appendChild(wrap);
+      });
+    }
+    function renderMapChips() {
+      var box = document.getElementById("map-chips");
+      if (box.getAttribute("data-ready")) return;
+      box.setAttribute("data-ready", "1");
+      [["all", "All areas"], ["today", "Today’s pocket"]].forEach(function (pair, i) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip" + (i === 0 ? " on" : "");
+        b.textContent = pair[1];
+        b.onclick = function () {
+          box.querySelectorAll(".chip").forEach(function (c) { c.classList.remove("on"); });
+          b.classList.add("on");
+          onlyToday = pair[0] === "today";
+          selectedArea = onlyToday ? todayAreaId() : null;
+          renderAreas();
+          drawMap();
+        };
+        box.appendChild(b);
+      });
+    }
+    function refreshMap() {
+      ensureMap();
+      renderMapChips();
+      renderAreas();
+      drawMap();
+      if (mapObj) setTimeout(function () { mapObj.invalidateSize(); }, 120);
+    }
+    function askGps() {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(function (pos) {
+        here = { lat: pos.coords.latitude, lng: pos.coords.longitude, gps: true };
+        document.getElementById("map-origin").textContent = "Distance from you.";
+        refreshMap();
+      }, function () {}, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
+    }
     function dest(el) {
       var lat = el.getAttribute("data-lat");
       var lng = el.getAttribute("data-lng");
@@ -473,6 +676,10 @@
         b.classList.add("on");
         document.querySelectorAll(".panel").forEach(function (p) { p.classList.remove("on"); });
         document.getElementById("panel-" + b.getAttribute("data-tab")).classList.add("on");
+        if (b.getAttribute("data-tab") === "map") {
+          refreshMap();
+          askGps();
+        }
       };
     });
     document.getElementById("usd").addEventListener("input", function () { setFx(true); });
@@ -489,6 +696,7 @@
       if (d && d.places && d.places.length) {
         PLACES = d.places;
         renderDir();
+        if (document.getElementById("panel-map").classList.contains("on")) refreshMap();
       }
     }).catch(function () {});
     renderChecks();
