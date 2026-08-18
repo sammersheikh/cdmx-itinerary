@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>CDMX · Aug 19–23</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f4efe4;
+      --paper: #fffaf2;
+      --ink: #1c2a24;
+      --muted: #5d6b64;
+      --line: rgba(28, 42, 36, 0.1);
+      --emerald: #1f6b4a;
+      --emerald-soft: #dceee4;
+      --shadow: 0 12px 40px rgba(28, 42, 36, 0.08);
+      --radius: 24px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--cream); color: var(--ink); font-family: "Source Sans 3", sans-serif; font-size: 17px; line-height: 1.45; }
+    body { padding: 28px 18px 80px; }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    .kicker { letter-spacing: 0.16em; text-transform: uppercase; font-size: 11px; font-weight: 600; color: var(--emerald); }
+    h1 { font-family: "DM Serif Display", serif; font-weight: 400; font-size: clamp(42px, 11vw, 64px); line-height: 0.95; margin: 8px 0 10px; }
+    .lede { color: var(--muted); margin: 0 0 28px; max-width: 28em; }
+    .people { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+    .chip { background: var(--paper); border-radius: 999px; padding: 8px 14px; font-size: 14px; box-shadow: var(--shadow); }
+    .card { background: var(--paper); border-radius: var(--radius); padding: 22px 22px 20px; box-shadow: var(--shadow); margin-bottom: 16px; }
+    .card h2 { font-family: "DM Serif Display", serif; font-size: 26px; font-weight: 400; margin: 6px 0 14px; }
+    .row { display: grid; grid-template-columns: 72px 1fr; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+    .row:first-of-type { border-top: 0; padding-top: 0; }
+    .when { color: var(--emerald); font-weight: 600; font-size: 13px; letter-spacing: 0.02em; }
+    .what { font-weight: 600; }
+    .meta { color: var(--muted); font-size: 14px; margin-top: 3px; }
+    a { color: var(--emerald); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    .day-num { font-family: "DM Serif Display", serif; font-size: 40px; line-height: 1; color: var(--emerald); }
+    .leave { display: inline-block; margin-top: 10px; background: var(--emerald-soft); color: var(--emerald); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; }
+    .sos { font-size: 15px; color: var(--muted); }
+    .sos strong { color: var(--ink); }
+    footer { margin-top: 28px; color: var(--muted); font-size: 13px; }
+    .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .acts button, .acts a.btn {
+      appearance: none; border: 0; background: var(--emerald-soft); color: var(--emerald);
+      border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 600;
+      font-family: inherit; cursor: pointer; text-decoration: none; line-height: 1.2;
+    }
+    .cat-h { font-family: "DM Serif Display", serif; font-size: 20px; margin: 18px 0 4px; }
+    .place { padding: 14px 0; border-top: 1px solid var(--line); }
+    .place:first-of-type { border-top: 0; }
+    #gate { position: fixed; inset: 0; background: var(--cream); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 20; }
+    #gate.out { display: none; }
+    .gate-card { width: min(360px, 100%); background: var(--paper); border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px 28px 28px; text-align: center; }
+    .gate-card h1 { font-size: 40px; margin: 8px 0 6px; }
+    .gate-card p { color: var(--muted); margin: 0 0 22px; }
+    .gate-card input { width: 100%; border: 1px solid var(--line); background: var(--cream); border-radius: 16px; padding: 16px; font-size: 22px; letter-spacing: 0.4em; text-align: center; font-family: inherit; color: var(--ink); }
+    .gate-card input:focus { outline: 2px solid var(--emerald); border-color: transparent; }
+    .gate-card button { margin-top: 14px; width: 100%; border: 0; background: var(--emerald); color: #fff; border-radius: 16px; padding: 14px; font-size: 16px; font-weight: 600; font-family: inherit; }
+    .err { color: #9b2c2c; font-size: 14px; min-height: 1.2em; margin-top: 10px; }
+    body.locked main { visibility: hidden; }
+  </style>
+</head>
+<body class="locked">
+  <div id="gate">
+    <form class="gate-card" id="pin-form">
+      <p class="kicker">Itinerary</p>
+      <h1>CDMX</h1>
+      <p>Enter the pin to open the plan.</p>
+      <input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" autofocus />
+      <button type="submit">Open</button>
+      <div class="err" id="err"></div>
+    </form>
+  </div>
+  <main class="wrap">
+    <p class="kicker">Sammer · Imelda · Cynthia</p>
+    <h1>Mexico City</h1>
+    <p class="lede">Wed Aug 19 → Sun Aug 23, 2026. Four nights in Tlalpan with family. Maps and Uber start from wherever you are when you tap.</p>
+    <div class="people">
+      <span class="chip">30A Cynthia</span>
+      <span class="chip">30B Imelda</span>
+      <span class="chip">30C Sammer</span>
+    </div>
+
+    <section class="card">
+      <p class="kicker">Flights · United</p>
+      <h2>In the air</h2>
+      <div class="row">
+        <div class="when">Wed 19</div>
+        <div>
+          <div class="what">UA 1271 · SFO → MEX</div>
+          <div class="meta">10:50a – 4:15p · nonstop 4h 25m · 737 MAX 8</div>
+          <div class="meta">Be at SFO 9:20a · leave Tracy 6:30a · drop car at Carlyle Ct then Uber</div>
+          <div class="acts" data-name="SFO" data-addr="San Francisco International Airport" data-lat="37.6213" data-lng="-122.3790"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="when">Sun 23</div>
+        <div>
+          <div class="what">UA 822 · MEX → SFO</div>
+          <div class="meta">5:00a – 8:45a · nonstop 4h 45m</div>
+          <div class="meta">Leave house 2:15a · at MEX 3:00a</div>
+          <div class="acts" data-name="MEX" data-addr="Aeropuerto Internacional de la Ciudad de México" data-lat="19.43423" data-lng="-99.07331"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <p class="kicker">Days</p>
+      <h2>The spine</h2>
+      <div class="row">
+        <div class="day-num">19</div>
+        <div>
+          <div class="what">Wednesday — arrive light</div>
+          <div class="meta">Land 4:15p. Sitio taxi to the house. Eat there. Sleep. You’re at 2,300 m.</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="day-num">20</div>
+        <div>
+          <div class="what">Thursday — tasting</div>
+          <div class="meta">Rancho San Jorge · 11:00–12:00 · leave 10:40a</div>
+          <div class="acts" data-name="Rancho San Jorge" data-addr="Camino a Xicalco 26, San Andrés Totoltepec, 14400 Tlalpan, CDMX" data-lat="19.24113" data-lng="-99.17250"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="day-num">21</div>
+        <div>
+          <div class="what">Friday — Lucha Libre</div>
+          <div class="meta">Arena México · 8:30p · leave 7:15p · app car to the door</div>
+          <div class="acts" data-name="Arena México" data-addr="Dr. Rafael Lucio, Doctores, Cuauhtémoc, 06720 CDMX" data-lat="19.42461" data-lng="-99.15200"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="day-num">22</div>
+        <div>
+          <div class="what">Saturday — brunch, then pack</div>
+          <div class="meta">San Ángel Inn · 12:00 · leave 11:20a · lock 2:15a airport ride</div>
+          <div class="acts" data-name="San Ángel Inn" data-addr="Calle Diego Rivera 50, San Ángel Inn, Álvaro Obregón, 01060 CDMX" data-lat="19.34952" data-lng="-99.19792"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="day-num">23</div>
+        <div>
+          <div class="what">Sunday — home</div>
+          <div class="meta">Leave 2:15a · MEX 3:00a · UA 822 5:00a · SFO 8:45a</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <p class="kicker">Directory</p>
+      <h2>Every place</h2>
+      <p class="meta">Copy the address, or tap Maps / Uber from your current location.</p>
+      <div id="dir"></div>
+    </section>
+
+    <section class="card sos">
+      <p class="kicker">If something breaks</p>
+      <h2>Need this</h2>
+      <p><strong>911</strong> police / ambulance · <strong>078</strong> tourist info</p>
+      <p>NL consular: <strong>+31 247 247 247</strong> or <strong>+52 55 1105 6550</strong></p>
+      <p>App cars only. No street taxis. No vapes.</p>
+    </section>
+    <footer>Live itinerary · updated as plans change.</footer>
+  </main>
+  <script>
+    var PLACES = [
+      {cat:"Stay", name:"Family house", addr:"Flor Silvestre 13, San Pedro Mártir, 14650 Tlalpan, CDMX", lat:19.26237, lng:-99.17502, note:"Sitio taxi from MEX Wed night · 60–90 min rush"},
+      {cat:"Transport", name:"Car drop · Carlyle Ct", addr:"4511 Carlyle Court, Santa Clara, CA 95054", lat:37.40268, lng:-121.95085, note:"Wed morning before Uber to SFO"},
+      {cat:"Transport", name:"SFO", addr:"San Francisco International Airport", lat:37.6213, lng:-122.3790, note:"Be there 9:20a Wed"},
+      {cat:"Transport", name:"MEX airport", addr:"Aeropuerto Internacional Benito Juárez, CDMX", lat:19.43423, lng:-99.07331, note:"Be there 3:00a Sun"},
+      {cat:"Dining", name:"Rancho San Jorge", addr:"Camino a Xicalco 26, San Andrés Totoltepec, 14400 Tlalpan, CDMX", lat:19.24113, lng:-99.17250, note:"Thu 11:00 tasting · ~8 min from house"},
+      {cat:"Dining", name:"San Ángel Inn", addr:"Calle Diego Rivera 50, San Ángel Inn, 01060 CDMX", lat:19.34952, lng:-99.19792, note:"Sat 12:00 brunch"},
+      {cat:"Dining", name:"Tetetlán", addr:"Av. de las Fuentes 180-B, Jardines del Pedregal, 01900 CDMX", lat:19.32850, lng:-99.20478, note:"IG breakfast reel · Pedregal · ~8 min from San Ángel Inn · vinyl + shop"},
+      {cat:"Culture", name:"Casa Pedregal (Barragán)", addr:"Av. de las Fuentes 180, Jardines del Pedregal, 01900 CDMX", lat:19.32850, lng:-99.20478, note:"Next door to Tetetlán"},
+      {cat:"Show", name:"Arena México", addr:"Dr. Rafael Lucio, Doctores, 06720 CDMX", lat:19.42461, lng:-99.15200, note:"Fri 8:30p Lucha Libre"},
+      {cat:"Shopping", name:"Mercado de Artesanías La Ciudadela", addr:"Av. Balderas, Centro, 06040 CDMX", lat:19.43076, lng:-99.14916, note:"IG crafts reel · 3 min from Arena México"},
+      {cat:"Cafes", name:"El Minutito", addr:"Londres 28, Juárez, 06600 CDMX", lat:19.42788, lng:-99.15850, note:"Kevin’s list"},
+      {cat:"Cafes", name:"Furniture Music", addr:"Zacatecas 17, Roma Norte, CDMX", lat:19.41641, lng:-99.15671, note:"Kevin’s list · vintage café"},
+      {cat:"Cafes", name:"Café Tormenta", addr:"Puebla & Mérida, Roma Norte, 06700 CDMX", lat:19.42313, lng:-99.15870, note:"Kevin’s list · street stand"},
+      {cat:"Cafes", name:"Drippin", addr:"Tlacoquemécatl 217, Col. Del Valle Centro, CDMX", lat:19.37735, lng:-99.16809, note:"Kevin’s list"},
+      {cat:"Cafes", name:"Tostador 1", addr:"Londres 31, Juárez, 06600 CDMX", lat:19.42793, lng:-99.15916, note:"Kevin’s list · across from El Minutito"},
+      {cat:"Cafes", name:"Supplicafe", addr:"@_supplicafe", lat:null, lng:null, note:"Tagged on Kevin’s list · confirm pin on IG"}
+    ];
+    var CATS = ["Stay","Transport","Dining","Show","Shopping","Cafes","Culture"];
+
+    function dest(el) {
+      var lat = el.getAttribute("data-lat");
+      var lng = el.getAttribute("data-lng");
+      var addr = el.getAttribute("data-addr") || "";
+      if (lat && lng && lat !== "null") return lat + "," + lng;
+      return addr;
+    }
+    function mapsHref(el) {
+      return "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(dest(el));
+    }
+    function uberHref(el) {
+      var addr = el.getAttribute("data-addr") || "";
+      var lat = el.getAttribute("data-lat");
+      var lng = el.getAttribute("data-lng");
+      var u = "https://m.uber.com/ul/?action=setPickup&pickup=my_location";
+      if (lat && lat !== "null") u += "&dropoff[latitude]=" + lat + "&dropoff[longitude]=" + lng;
+      if (addr) u += "&dropoff[formatted_address]=" + encodeURIComponent(addr);
+      return u;
+    }
+    function copyAddr(el) {
+      var addr = el.getAttribute("data-addr") || "";
+      function done() {
+        var b = el.querySelector("[data-copy]");
+        if (b) { b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy"; }, 1200); }
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(addr).then(done).catch(function () {
+          window.prompt("Copy address", addr);
+        });
+      } else {
+        window.prompt("Copy address", addr);
+      }
+    }
+    function fillActs(box) {
+      if (!box || box.getAttribute("data-ready")) return;
+      box.setAttribute("data-ready", "1");
+      box.innerHTML =
+        '<button type="button" data-copy>Copy</button>' +
+        '<a class="btn" data-maps target="_blank" rel="noopener">Maps</a>' +
+        '<a class="btn" data-uber target="_blank" rel="noopener">Uber</a>';
+      box.querySelector("[data-copy]").onclick = function () { copyAddr(box); };
+      box.querySelector("[data-maps]").href = mapsHref(box);
+      box.querySelector("[data-uber]").href = uberHref(box);
+    }
+    function renderDir() {
+      var root = document.getElementById("dir");
+      CATS.forEach(function (cat) {
+        var items = PLACES.filter(function (p) { return p.cat === cat; });
+        if (!items.length) return;
+        var h = document.createElement("div");
+        h.className = "cat-h";
+        h.textContent = cat;
+        root.appendChild(h);
+        items.forEach(function (p) {
+          var d = document.createElement("div");
+          d.className = "place";
+          d.innerHTML = '<div class="what"></div><div class="meta addr"></div><div class="meta note"></div><div class="acts"></div>';
+          d.querySelector(".what").textContent = p.name;
+          d.querySelector(".addr").textContent = p.addr;
+          d.querySelector(".note").textContent = p.note || "";
+          var acts = d.querySelector(".acts");
+          acts.setAttribute("data-name", p.name);
+          acts.setAttribute("data-addr", p.addr);
+          if (p.lat != null) { acts.setAttribute("data-lat", p.lat); acts.setAttribute("data-lng", p.lng); }
+          fillActs(acts);
+          root.appendChild(d);
+        });
+      });
+    }
+
+    document.querySelectorAll(".acts[data-addr]").forEach(fillActs);
+    renderDir();
+
+    (function () {
+      var KEY = "cdmx_ok";
+      var gate = document.getElementById("gate");
+      function unlock() {
+        document.body.classList.remove("locked");
+        gate.classList.add("out");
+      }
+      if (sessionStorage.getItem(KEY) === "1") unlock();
+      document.getElementById("pin-form").addEventListener("submit", function (e) {
+        e.preventDefault();
+        var v = document.getElementById("pin").value.trim();
+        if (v === "0824") {
+          sessionStorage.setItem(KEY, "1");
+          unlock();
+        } else {
+          document.getElementById("err").textContent = "Wrong pin.";
+          document.getElementById("pin").value = "";
+          document.getElementById("pin").focus();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
