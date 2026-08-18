@@ -1,0 +1,11 @@
+{
+  "name": "cdmx-itinerary",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "seed": "node scripts/seed.mjs"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.1"
+  }
+}

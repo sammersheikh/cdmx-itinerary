@@ -1,5 +1,9 @@
+.vercel
+.env
+.env.local
+node_modules
 .DS_Store
 preview.png
 *.log
 .cache/
-node_modules/
+.env*

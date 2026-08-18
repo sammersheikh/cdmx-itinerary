@@ -330,6 +330,7 @@
     }
     function renderDir() {
       var root = document.getElementById("dir");
+      root.innerHTML = "";
       CATS.forEach(function (cat) {
         var items = PLACES.filter(function (p) { return p.cat === cat; });
         if (!items.length) return;
@@ -484,6 +485,12 @@
     renderDays("all");
     document.querySelectorAll(".acts[data-addr]").forEach(fillActs);
     renderDir();
+    fetch("/api/places").then(function (r) { return r.json(); }).then(function (d) {
+      if (d && d.places && d.places.length) {
+        PLACES = d.places;
+        renderDir();
+      }
+    }).catch(function () {});
     renderChecks();
     renderPhrases();
     tick();
